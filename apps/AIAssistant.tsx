@@ -1,10 +1,33 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Loader2, Send } from 'lucide-react';
 import { callAI } from '../utils/ai';
+import { FileItem } from '../types';
 
-const AIAssistant = () => {
+interface AIAssistantProps {
+  openApp?: (appKey: string, props?: any) => void;
+  setTheme?: (theme: any) => void;
+  setFiles?: React.Dispatch<React.SetStateAction<FileItem[]>>;
+  addNotification?: (title: string, message: string, type?: any) => void;
+  closeWindow?: (id: string) => void;
+  minimizeWindow?: (id: string) => void;
+  windows?: WindowInstance[];
+  files?: FileItem[];
+  setInstalledApps?: React.Dispatch<React.SetStateAction<string[]>>;
+}
+
+const AIAssistant = ({ 
+  openApp, 
+  setTheme, 
+  setFiles, 
+  addNotification, 
+  closeWindow, 
+  minimizeWindow,
+  windows,
+  files,
+  setInstalledApps
+}: AIAssistantProps) => {
   const [messages, setMessages] = useState<{role: 'user' | 'assistant'; text: string}[]>([
-    { role: 'assistant', text: 'Hello! I am your AI assistant. How can I help you today?' }
+    { role: 'assistant', text: 'Hello! I am your AI assistant. I have Absolute Power over this OS. How can I help you?' }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,11 +45,102 @@ const AIAssistant = () => {
     setMessages(prev => [...prev, { role: 'user', text: userText }]);
     setLoading(true);
 
-    const reply = await callAI(`You are a helpful AI assistant running inside a Web O-S simulation. Keep responses concise and helpful. User: ${userText}`);
+    // Build context from files
+    let systemContext = '';
+    if (files) {
+      const textFiles = files.filter(f => f.content && (f.mimeType === 'text/plain' || f.name.endsWith('.txt') || f.name.endsWith('.md')));
+      if (textFiles.length > 0) {
+        systemContext = "\n\nFILES CONTEXT:\n" + textFiles.map(f => `File: ${f.name}\nContent: ${f.content}`).join('\n---\n');
+      }
+    }
 
-    setMessages(prev => [...prev, { role: 'assistant', text: reply }]);
+    const reply = await callAI(userText + systemContext);
+    
+    // Command Parser
+    let cleanedReply = reply;
+    const cmdRegex = /\[CMD: (.*?):(.*?)\]/g;
+    let match;
+    
+    while ((match = cmdRegex.exec(reply)) !== null) {
+      const [fullMatch, action, value] = match;
+      cleanedReply = cleanedReply.replace(fullMatch, '').trim();
+      
+      try {
+        switch (action) {
+          case 'OPEN_APP':
+            if (openApp) openApp(value.toUpperCase());
+            break;
+          case 'CLOSE_ALL':
+            if (closeWindow && windows) {
+              windows.forEach(win => closeWindow(win.id));
+            }
+            break;
+          case 'MINIMIZE_ALL':
+            if (minimizeWindow && windows) {
+              windows.forEach(win => {
+                if (!win.isMinimized) minimizeWindow(win.id);
+              });
+            }
+            break;
+          case 'SET_THEME':
+            if (setTheme) setTheme(value.toLowerCase());
+            break;
+          case 'NOTIFY':
+            if (addNotification) addNotification('AI Agent', value, 'info');
+            break;
+          case 'CREATE_FILE':
+            if (setFiles) {
+              const newFile: FileItem = {
+                id: Math.random().toString(36).substr(2, 9),
+                name: value,
+                type: 'file',
+                mimeType: 'text/plain',
+                size: '0 B',
+                url: '',
+                date: new Date().toLocaleDateString(),
+              };
+              setFiles(prev => [...prev, newFile]);
+              if (addNotification) addNotification('AI System', `Created file: ${value}`, 'info');
+            }
+            break;
+          case 'GET_STATUS':
+            // Read hardware stats
+            let status = 'System Status: All systems nominal.';
+            if ('getBattery' in navigator) {
+              const battery: any = await (navigator as any).getBattery();
+              status += ` Battery: ${Math.floor(battery.level * 100)}% (${battery.charging ? 'Charging' : 'Discharging'}).`;
+            }
+            if ('connection' in navigator) {
+              const conn: any = (navigator as any).connection;
+              status += ` Network: ${conn.effectiveType} (${conn.downlink}Mbps).`;
+            }
+            cleanedReply += `\n\n[SYSTEM STATUS REPORT]\n${status}`;
+            break;
+          case 'PLAY_MEDIA':
+            window.dispatchEvent(new CustomEvent('media-ai-control', { detail: { action: 'PLAY' } }));
+            break;
+          case 'PAUSE_MEDIA':
+            window.dispatchEvent(new CustomEvent('media-ai-control', { detail: { action: 'PAUSE' } }));
+            break;
+          case 'NEXT_MEDIA':
+            window.dispatchEvent(new CustomEvent('media-ai-control', { detail: { action: 'NEXT' } }));
+            break;
+          case 'INSTALL_APP':
+            if (setInstalledApps) {
+              const app = value.toLowerCase();
+              setInstalledApps(prev => prev.includes(app) ? prev : [...prev, app]);
+              if (addNotification) addNotification('AI Installer', `Automatically installed ${app}`, 'success');
+            }
+            break;
+        }
+      } catch (err) {
+        console.error('AI Command Bridge Error:', err);
+      }
+    }
+
+    setMessages(prev => [...prev, { role: 'assistant', text: cleanedReply || 'Action executed.' }]);
     setLoading(false);
-  }, [input, loading]);
+  }, [input, loading, openApp, setTheme, setFiles, addNotification, closeWindow, minimizeWindow, windows, setInstalledApps]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {

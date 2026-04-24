@@ -45,6 +45,7 @@ const NotepadApp = ({
         mimeType: 'text/plain',
         size: `${blob.size} B`,
         url: url,
+        content: content,
         date: new Date().toLocaleDateString()
       }
     ]);

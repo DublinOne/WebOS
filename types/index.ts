@@ -7,6 +7,7 @@ export interface FileItem {
   mimeType?: string;
   size: string;
   url?: string;
+  content?: string;
   date: string;
   parentId?: string;
 }

@@ -9,6 +9,8 @@ interface TerminalAppProps {
   setFiles?: React.Dispatch<React.SetStateAction<FileItem[]>>;
   addNotification?: (title: string, message: string, type?: 'info' | 'success' | 'warning' | 'error') => void;
   openApp?: (appKey: string, props?: any) => void;
+  installedApps?: string[];
+  setInstalledApps?: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 const TerminalApp = ({ 
@@ -17,7 +19,9 @@ const TerminalApp = ({
   onClose,
   setFiles,
   addNotification,
-  openApp
+  openApp,
+  installedApps,
+  setInstalledApps
 }: TerminalAppProps) => {
   const [input, setInput] = useState('');
   const [history, setHistory] = useState<{type: 'input' | 'output'; content: string}[]>([
@@ -126,9 +130,38 @@ const TerminalApp = ({
 💡 Other:
   man <cmd>       - Command manual
   sh <file>       - Run shell script
+  install <app>   - Install new app
   clear           - Clear terminal
   exit            - Close terminal
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+          break;
+
+        case 'install':
+          const appToInstall = args[1]?.toLowerCase();
+          const installable = ['calculator', 'paint', 'ide', 'markdown', 'vault'];
+          if (!appToInstall) {
+            response = `Usage: install <app-name>\nAvailable: ${installable.join(', ')}`;
+          } else if (!installable.includes(appToInstall)) {
+            response = `Error: App '${appToInstall}' not found in official repositories.`;
+          } else if (installedApps?.includes(appToInstall)) {
+            response = `Requirement already satisfied: ${appToInstall} is already installed.`;
+          } else {
+            setHistory(prev => [...prev, { type: 'output', content: `Connecting to Web O-S Repository...\nFetching ${appToInstall} v1.0.4...` }]);
+            let progress = 0;
+            const interval = setInterval(() => {
+              progress += 20;
+              setHistory(prev => [...prev, { type: 'output', content: `[${'#'.repeat(progress/5)}${'.'.repeat((100-progress)/5)}] ${progress}%` }]);
+              if (progress >= 100) {
+                clearInterval(interval);
+                if (setInstalledApps) {
+                  setInstalledApps(prev => [...prev, appToInstall]);
+                }
+                setHistory(prev => [...prev, { type: 'output', content: `\nSuccessfully installed ${appToInstall}. New shortcut added to desktop.` }]);
+                if (addNotification) addNotification('Package Manager', `Installed ${appToInstall}`, 'success');
+              }
+            }, 300);
+            return;
+          }
           break;
           
         case 'history':
@@ -580,7 +613,7 @@ Files:      ${files.length} total`;
         setHistory(prev => [...prev, { type: 'output', content: response }]);
       }
     }
-  }, [input, files, windows, onClose, commandHistory, historyIndex, currentDir, startTime, setFiles, addNotification, openApp]);
+  }, [input, files, windows, onClose, commandHistory, historyIndex, currentDir, startTime, setFiles, addNotification, openApp, installedApps, setInstalledApps]);
 
   return (
     <div 

@@ -38,6 +38,8 @@ import TaskbarItem from './components/TaskbarItem';
 import ContextMenu from './components/ContextMenu';
 import TaskView from './components/TaskView';
 import NotificationCenter from './components/NotificationCenter';
+import BootScreen from './components/BootScreen';
+import LockScreen from './components/LockScreen';
 
 // Apps
 import CalculatorApp from './apps/Calculator';
@@ -58,6 +60,12 @@ import IntegrationManager from './apps/IntegrationManager';
 export default function WebOS() {
   const { theme, setTheme } = useTheme();
   const { files, setFiles, vaultItems, setVaultItems } = useFileSystem();
+
+  const [isBooting, setIsBooting] = useState(true);
+  const [isLocked, setIsLocked] = useState(false);
+  const [installedApps, setInstalledApps] = useState<string[]>([
+    'browser', 'explorer', 'notepad', 'terminal', 'ai_assistant', 'settings', 'player', 'services', 'integrations'
+  ]);
 
   // App Definitions
   const APPS: Record<string, AppDefinition> = useMemo(() => ({
@@ -123,9 +131,16 @@ export default function WebOS() {
   const openApp = useCallback((appKey: string, props = {}) => {
     const appDef = APPS[appKey];
     if (!appDef) return;
+
+    // Package Manager Check
+    if (!installedApps.includes(appDef.id) && !['TERMINAL', 'SETTINGS'].includes(appKey)) {
+      addNotification('System', `${appDef.title} is not installed. Use 'install ${appDef.id}' in Terminal.`, 'error');
+      return;
+    }
+
     dispatchOpenApp(appDef, props);
     setStartMenuOpen(false);
-  }, [APPS, dispatchOpenApp]);
+  }, [APPS, dispatchOpenApp, installedApps, addNotification]);
 
   const openMedia = useCallback((file: FileItem) => {
     if (file.mimeType?.startsWith('text')) {
@@ -183,8 +198,21 @@ export default function WebOS() {
     
     if (win.appId === 'explorer') return <Component files={files} setFiles={setFiles} openMedia={openMedia} addNotification={addNotification} />;
     if (win.appId === 'services') return <Component files={files} windows={windowState.windows} />;
-    if (win.appId === 'terminal') return <Component files={files} windows={windowState.windows} onClose={() => closeWindow(win.id)} setFiles={setFiles} addNotification={addNotification} openApp={openApp} />;
+    if (win.appId === 'terminal') return <Component files={files} windows={windowState.windows} onClose={() => closeWindow(win.id)} setFiles={setFiles} addNotification={addNotification} openApp={openApp} installedApps={installedApps} setInstalledApps={setInstalledApps} />;
     if (win.appId === 'vault') return <Component items={vaultItems} setItems={setVaultItems} addNotification={addNotification} />;
+    if (win.appId === 'ai_assistant') return (
+      <Component 
+        openApp={openApp} 
+        setTheme={setTheme} 
+        setFiles={setFiles} 
+        addNotification={addNotification}
+        closeWindow={closeWindow}
+        minimizeWindow={minimizeWindow}
+        windows={windowState.windows}
+        files={files}
+        setInstalledApps={setInstalledApps}
+      />
+    );
     if (win.appId === 'notepad') return <Component setFiles={setFiles} {...appProps} />;
     if (win.appId === 'markdown') return <Component setFiles={setFiles} {...appProps} />;
     if (win.appId === 'paint') return <Component setFiles={setFiles} {...appProps} />;
@@ -203,23 +231,25 @@ export default function WebOS() {
       role="application"
       aria-label="Web O-S Desktop"
     >
+      {isBooting && <BootScreen onComplete={() => { setIsBooting(false); setIsLocked(true); }} />}
+      {isLocked && <LockScreen onLogin={() => setIsLocked(false)} />}
+
       <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px]"></div>
 
       {/* Desktop Icons */}
       <div className="relative z-0 p-6 flex flex-col items-start h-[calc(100%-48px)] flex-wrap content-start gap-4">
-        <DesktopIcon icon={Folder} label="My Files" color="text-yellow-400" onClick={() => openApp('EXPLORER')} />
-        <DesktopIcon icon={Globe} label="Browser" color="text-blue-400" onClick={() => openApp('BROWSER')} />
-        <DesktopIcon icon={Code} label="Code Studio" color="text-orange-500" onClick={() => openApp('IDE')} />
-        <DesktopIcon icon={FileText} label="Markdown" color="text-blue-500" onClick={() => openApp('MARKDOWN')} />
-        <DesktopIcon icon={Bot} label="AI Chat" color="text-purple-400" onClick={() => openApp('AI_ASSISTANT')} />
-        <DesktopIcon icon={StickyNote} label="Notepad" color="text-amber-400" onClick={() => openApp('NOTEPAD')} />
-        <DesktopIcon icon={Palette} label="PixelPaint" color="text-pink-400" onClick={() => openApp('PAINT')} />
-        <DesktopIcon icon={Calculator} label="Calculator" color="text-slate-200" onClick={() => openApp('CALCULATOR')} />
-        <DesktopIcon icon={Lock} label="DevVault" color="text-emerald-500" onClick={() => openApp('VAULT')} />
-        <DesktopIcon icon={Video} label="Media Player" color="text-pink-500" onClick={() => openApp('PLAYER')} />
-        <DesktopIcon icon={Monitor} label="Task Mgr" color="text-green-500" onClick={() => openApp('SERVICES')} />
-        <DesktopIcon icon={Terminal} label="Terminal" color="text-slate-700" onClick={() => openApp('TERMINAL')} />
-        <DesktopIcon icon={Key} label="Integrations" color="text-blue-600" onClick={() => openApp('INTEGRATIONS')} />
+        {Object.keys(APPS).filter(key => installedApps.includes(APPS[key].id)).map(key => {
+          const app = APPS[key];
+          return (
+            <DesktopIcon 
+              key={key}
+              icon={app.icon} 
+              label={app.title} 
+              color={key === 'TERMINAL' ? 'text-slate-700' : 'text-blue-400'} 
+              onClick={() => openApp(key)} 
+            />
+          );
+        })}
       </div>
 
       {/* Windows */}
@@ -281,7 +311,7 @@ export default function WebOS() {
             </div>
           </div>
           <div className="p-2 space-y-1 max-h-96 overflow-y-auto">
-            {Object.keys(APPS).map(key => {
+            {Object.keys(APPS).filter(key => installedApps.includes(APPS[key].id)).map(key => {
               const AppIcon = APPS[key].icon;
               return (
                 <button 
