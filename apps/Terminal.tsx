@@ -21,7 +21,7 @@ const TerminalApp = ({
 }: TerminalAppProps) => {
   const [input, setInput] = useState('');
   const [history, setHistory] = useState<{type: 'input' | 'output'; content: string}[]>([
-    { type: 'output', content: 'WebOS Terminal v3.0.0 initialized...' },
+    { type: 'output', content: 'Web O-S Terminal v3.0.0 initialized...' },
     { type: 'output', content: 'Type "help" for available commands.' }
   ]);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
@@ -394,13 +394,13 @@ Files:      ${files.length} total`;
           
         case 'neofetch':
           response = `
-    ╭───────────────╮     guest@webos
+    ╭───────────────╮     guest@web-os
     │    ████████   │     ───────────
-    │    ████████   │     OS: WebOS 1.2.0
-    │    ▀▀▀▀▀▀▀▀   │     Kernel: webos-kernel
+    │    ████████   │     OS: Web O-S 1.2.0
+    │    ▀▀▀▀▀▀▀▀   │     Kernel: web-os-kernel
     │               │     Shell: wsh
     │    ▄▄▄▄▄▄▄▄   │     Resolution: ${window.innerWidth}x${window.innerHeight}
-    ╰───────────────╯     Terminal: WebOS Terminal`;
+    ╰───────────────╯     Terminal: Web O-S Terminal`;
           break;
           
         case 'whoami':

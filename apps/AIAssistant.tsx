@@ -22,7 +22,7 @@ const AIAssistant = () => {
     setMessages(prev => [...prev, { role: 'user', text: userText }]);
     setLoading(true);
 
-    const reply = await callAI(`You are a helpful AI assistant running inside a WebOS simulation. Keep responses concise and helpful. User: ${userText}`);
+    const reply = await callAI(`You are a helpful AI assistant running inside a Web O-S simulation. Keep responses concise and helpful. User: ${userText}`);
 
     setMessages(prev => [...prev, { role: 'assistant', text: reply }]);
     setLoading(false);

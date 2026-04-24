@@ -1,4 +1,4 @@
-# WebOS
+# Web O-S
 
 A modern, feature-rich web-based operating system built with React and TypeScript.
 

@@ -201,7 +201,7 @@ export default function WebOS() {
       }}
       onContextMenu={handleContextMenu}
       role="application"
-      aria-label="WebOS Desktop"
+      aria-label="Web O-S Desktop"
     >
       <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px]"></div>
 

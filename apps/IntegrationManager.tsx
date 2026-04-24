@@ -205,7 +205,7 @@ const IntegrationManager = ({ addNotification }: { addNotification?: (title: str
           type="user_secret"
           title="User Secrets"
           icon={Key}
-          description="Store generic environment variables or private keys for your custom WebOS tools."
+          description="Store generic environment variables or private keys for your custom Web O-S tools."
           color="bg-purple-500"
         />
       </div>

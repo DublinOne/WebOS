@@ -16,7 +16,7 @@ export const callAI = async (prompt: string): Promise<string> => {
     const data = await response.json();
     return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response received.';
   } catch (error) {
-    console.error('[WebOS] AI API Error:', error);
+    console.error('[Web O-S] AI API Error:', error);
     return 'Error: Unable to connect to AI service. Please try again later.';
   }
 };

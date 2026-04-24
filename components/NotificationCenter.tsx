@@ -113,7 +113,7 @@ const NotificationCenter = ({
 
           {/* System Info Footer */}
           <div className="p-4 bg-slate-950/50 border-t border-slate-800 text-[10px] text-slate-600 flex justify-between">
-            <span>WebOS v1.2.0-stable</span>
+            <span>Web O-S v1.2.0-stable</span>
             <span>Uptime: 24m</span>
           </div>
         </div>

@@ -145,7 +145,7 @@ const SettingsApp = ({
         </div>
 
         <div>
-          <h3 className="font-semibold mb-3">About WebOS</h3>
+          <h3 className="font-semibold mb-3">About Web O-S</h3>
           <div className="bg-slate-800 rounded-lg p-4 border border-slate-700 space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-slate-400">Version:</span>
